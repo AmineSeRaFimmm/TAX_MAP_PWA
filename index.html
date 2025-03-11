@@ -9,8 +9,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="orientation" content="landscape">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -21,35 +19,15 @@
             --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform-origin: 0 0;
-            transform: rotate(90deg);
-            width: 100vh;
-            height: 100vw;
-        }
-
         #map { 
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vh;
-            height: 100vw;
+            height: 600px; 
+            width: 100%; 
             border-radius: 8px;
             box-shadow: var(--shadow);
         }
 
         .leaflet-container {
             background: #f0f4f8;
-            width: 100vh !important;
-            height: 100vw !important;
         }
 
         .leaflet-popup-content-wrapper {
@@ -119,7 +97,7 @@
         }
 
         #toggleButton, #toggleOrangeButton, #toggleGreenButton {
-            position: fixed;
+            position: absolute;
             z-index: 1000;
             padding: 8px 16px;
             background-color: #1a73e8;
@@ -130,24 +108,22 @@
             font-family: 'Arial', sans-serif;
             font-size: 14px;
             box-shadow: var(--shadow);
-            transition: background-color 0.3s ease, transform 0.3s ease, left 0.3s ease, bottom 0.3s ease;
-            transform: rotate(-90deg);
-            transform-origin: center center;
+            transition: background-color 0.3s ease;
         }
 
         #toggleButton {
             left: 10px;
-            bottom: calc(100vh - 50px);
+            bottom: 10px;
         }
 
         #toggleOrangeButton {
-            left: 10px;
-            bottom: calc(100vh - 110px);
+            left: 110px;
+            bottom: 10px;
         }
 
         #toggleGreenButton {
-            left: 50px;
-            bottom: calc(100vh - 50px);
+            left: 10px;
+            bottom: 50px;
         }
 
         #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
@@ -308,15 +284,15 @@
                     var popupContent = `<b>${factory.name}</b>`;
                     if (factory.color === GREEN_COLOR) {
                         popupContent += `<br>出口至德国: ${factory.tariffs.DE}` +
-                                       `<br>出口至摩洛哥: ${factory.tariffs.MA}` +
-                                       `<br>出口至墨西哥: ${factory.tariffs.MX}` +
-                                       `<br>出口至美国: ${factory.tariffs.US}`;
+                                        `<br>出口至摩洛哥: ${factory.tariffs.MA}` +
+                                        `<br>出口至墨西哥: ${factory.tariffs.MX}` +
+                                        `<br>出口至美国: ${factory.tariffs.US}`;
                     } else {
                         popupContent += `<br>出口至美国: ${factory.tariffs.US}` +
-                                       `<br>出口至欧盟: ${factory.tariffs.EU}` +
-                                       (factory.tariffs.CA ? `<br>出口至加拿大: ${factory.tariffs.CA}` : '') +
-                                       (factory.tariffs.MX ? `<br>出口至墨西哥: ${factory.tariffs.MX}` : '') +
-                                       (factory.tariffs.BR ? `<br>出口至巴西: ${factory.tariffs.BR}` : '');
+                                        `<br>出口至欧盟: ${factory.tariffs.EU}` +
+                                        (factory.tariffs.CA ? `<br>出口至加拿大: ${factory.tariffs.CA}` : '') +
+                                        (factory.tariffs.MX ? `<br>出口至墨西哥: ${factory.tariffs.MX}` : '') +
+                                        (factory.tariffs.BR ? `<br>出口至巴西: ${factory.tariffs.BR}` : '');
                     }
                     marker.bindPopup(popupContent, { autoClose: false, closeOnClick: false });
 
@@ -436,9 +412,42 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
-            // 确保地图尺寸正确
-            map.invalidateSize();
+            // 注册 Service Worker 并监听更新
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
+                        console.log('Service Worker 注册成功，作用域为：', registration.scope);
+
+                        // 监听 Service Worker 更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 新版本已安装，提示用户刷新
+                                    if (confirm('有新版本可用，是否刷新应用？')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    }, function(error) {
+                        console.log('Service Worker 注册失败：', error);
+                    });
+                });
+            }
+
+            // 监听安装提示，提示用户重新添加到主屏幕
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                // 可选：提示用户重新安装
+                console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
+            });
         });
     </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
