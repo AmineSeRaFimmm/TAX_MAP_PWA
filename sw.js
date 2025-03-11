@@ -1,5 +1,5 @@
 // Service Worker 文件：sw.js
-const CACHE_NAME = 'tax-map-pwa-cache-v2'; // 每次更新时更改版本号，例如 v1 -> v2
+const CACHE_NAME = 'tax-map-pwa-cache-v3'; // 每次更新时更改版本号，例如 v1 -> v2
 const urlsToCache = [
     '/',
     '/index.html',
