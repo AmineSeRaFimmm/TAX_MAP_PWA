@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="orientation" content="landscape">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -23,29 +24,32 @@
         html, body {
             margin: 0;
             padding: 0;
-            width: 100%;
+            width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: fixed;
             top: 0;
             left: 0;
+            transform-origin: 0 0;
+            transform: rotate(90deg);
+            width: 100vh;
+            height: 100vw;
         }
 
         #map { 
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vh;
+            height: 100vw;
             border-radius: 8px;
             box-shadow: var(--shadow);
-            transition: transform 0.3s ease;
         }
 
         .leaflet-container {
             background: #f0f4f8;
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vh !important;
+            height: 100vw !important;
         }
 
         .leaflet-popup-content-wrapper {
@@ -114,7 +118,7 @@
             fill-opacity: 1;
         }
 
-        #toggleButton, #toggleOrangeButton, #toggleGreenButton, #toggleOrientationButton {
+        #toggleButton, #toggleOrangeButton, #toggleGreenButton {
             position: fixed;
             z-index: 1000;
             padding: 8px 16px;
@@ -127,81 +131,45 @@
             font-size: 14px;
             box-shadow: var(--shadow);
             transition: background-color 0.3s ease, transform 0.3s ease, left 0.3s ease, bottom 0.3s ease;
+            transform: rotate(-90deg);
+            transform-origin: center center;
         }
 
         #toggleButton {
             left: 10px;
-            bottom: 10px;
+            bottom: calc(100vh - 50px);
         }
 
         #toggleOrangeButton {
-            left: 110px;
-            bottom: 10px;
-        }
-
-        #toggleGreenButton {
-            left: 10px;
-            bottom: 50px;
-        }
-
-        #toggleOrientationButton {
-            left: 110px;
-            bottom: 50px;
-        }
-
-        #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover, #toggleOrientationButton:hover {
-            background-color: #1557b0;
-        }
-
-        /* 横屏模式 */
-        .landscape-mode {
-            width: 100vh;
-            height: 100vw;
-            transform: rotate(90deg);
-            transform-origin: 0 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-        }
-
-        .landscape-mode #map {
-            width: 100vh;
-            height: 100vw;
-            transform: none; /* 地图不额外旋转 */
-        }
-
-        .landscape-mode .leaflet-container {
-            width: 100vh !important;
-            height: 100vw !important;
-        }
-
-        /* 按钮在横屏模式下的调整 */
-        .landscape-mode #toggleButton {
-            transform: rotate(-90deg);
-            transform-origin: center center;
-            left: 10px;
-            bottom: calc(100vh - 50px); /* 调整位置 */
-        }
-
-        .landscape-mode #toggleOrangeButton {
-            transform: rotate(-90deg);
-            transform-origin: center center;
             left: 10px;
             bottom: calc(100vh - 110px);
         }
 
-        .landscape-mode #toggleGreenButton {
-            transform: rotate(-90deg);
-            transform-origin: center center;
+        #toggleGreenButton {
             left: 50px;
             bottom: calc(100vh - 50px);
         }
 
-        .landscape-mode #toggleOrientationButton {
-            transform: rotate(-90deg);
-            transform-origin: center center;
-            left: 50px;
-            bottom: calc(100vh - 110px);
+        #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
+            background-color: #1557b0;
+        }
+
+        @media (orientation: portrait) {
+            body {
+                display: none;
+            }
+            body:after {
+                content: "请将设备旋转至横屏模式！";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 24px;
+                color: #fff;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 20px;
+                border-radius: 10px;
+            }
         }
     </style>
 </head>
@@ -209,7 +177,6 @@
     <button id="toggleButton">成品出口</button>
     <button id="toggleOrangeButton">拟建工厂出口</button>
     <button id="toggleGreenButton">铝锭出口税</button>
-    <button id="toggleOrientationButton">切换横屏</button>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -487,47 +454,19 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
-            // 横屏/竖屏切换逻辑
-            function isMobileDevice() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            }
-
-            const toggleOrientationButton = document.getElementById('toggleOrientationButton');
-            let isLandscape = localStorage.getItem('isLandscape') === 'true';
-
-            // 初始化方向状态
-            function setOrientation() {
-                if (isMobileDevice()) {
-                    if (isLandscape) {
-                        document.body.classList.add('landscape-mode');
-                        toggleOrientationButton.textContent = '切换竖屏';
-                    } else {
-                        document.body.classList.remove('landscape-mode');
-                        toggleOrientationButton.textContent = '切换横屏';
-                    }
-                    // 强制 Leaflet 重新计算地图尺寸
-                    setTimeout(() => {
-                        map.invalidateSize();
-                        // 重新调整地图视图，确保居中
-                        map.setView([20, 0], 3);
-                    }, 300); // 等待 CSS 过渡完成
+            // 强制横屏检测
+            function enforceLandscape() {
+                if (window.innerHeight > window.innerWidth) {
+                    document.body.style.display = 'none';
+                } else {
+                    document.body.style.display = 'block';
                 }
             }
 
-            // 监听按钮点击，切换方向
-            toggleOrientationButton.addEventListener('click', function() {
-                if (!isMobileDevice()) {
-                    alert('此功能仅在移动设备上有效！');
-                    return;
-                }
-
-                isLandscape = !isLandscape;
-                localStorage.setItem('isLandscape', isLandscape);
-                setOrientation();
-            });
-
-            // 页面加载时恢复用户偏好
-            setOrientation();
+            // 页面加载时检查并监听屏幕方向
+            enforceLandscape();
+            window.addEventListener('resize', enforceLandscape);
+            window.addEventListener('orientationchange', enforceLandscape);
 
             // 注册 Service Worker 并监听更新
             if ('serviceWorker' in navigator) {
@@ -540,7 +479,6 @@
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // 新版本已安装，提示用户刷新
                                     if (confirm('有新版本可用，是否刷新应用？')) {
                                         newWorker.postMessage({ type: 'SKIP_WAITING' });
                                         window.location.reload();
@@ -562,12 +500,8 @@
                 console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
             });
 
-            // 监听窗口大小变化，重新调整地图尺寸
-            window.addEventListener('resize', () => {
-                setTimeout(() => {
-                    map.invalidateSize();
-                }, 300);
-            });
+            // 确保地图尺寸正确
+            map.invalidateSize();
         });
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
