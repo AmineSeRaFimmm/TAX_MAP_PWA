@@ -22,19 +22,26 @@
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden; /* 防止滚动条出现 */
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
 
         #map { 
-            height: 600px; 
-            width: 100%; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             border-radius: 8px;
             box-shadow: var(--shadow);
-            transition: all 0.3s ease; /* 平滑过渡 */
+            transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
         }
 
         .leaflet-container {
             background: #f0f4f8;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         .leaflet-popup-content-wrapper {
@@ -104,7 +111,7 @@
         }
 
         #toggleButton, #toggleOrangeButton, #toggleGreenButton, #toggleOrientationButton {
-            position: absolute;
+            position: fixed;
             z-index: 1000;
             padding: 8px 16px;
             background-color: #1a73e8;
@@ -115,7 +122,7 @@
             font-family: 'Arial', sans-serif;
             font-size: 14px;
             box-shadow: var(--shadow);
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.3s ease, left 0.3s ease, bottom 0.3s ease;
         }
 
         #toggleButton {
@@ -142,17 +149,15 @@
             background-color: #1557b0;
         }
 
-        /* 横屏模式：仅旋转地图和按钮 */
+        /* 横屏模式 */
         .landscape-mode #map {
             transform: rotate(90deg);
-            transform-origin: center center;
+            transform-origin: 0 0;
             width: 100vh;
             height: 100vw;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-left: calc(-50vh / 2);
-            margin-top: calc(-50vw / 2);
+            top: 0;
+            left: 0;
+            margin: 0;
         }
 
         .landscape-mode .leaflet-container {
@@ -160,32 +165,33 @@
             height: 100vw !important;
         }
 
-        /* 调整按钮位置和旋转 */
-        .landscape-mode #toggleButton,
-        .landscape-mode #toggleOrangeButton,
-        .landscape-mode #toggleGreenButton,
-        .landscape-mode #toggleOrientationButton {
-            transform: rotate(-90deg);
-        }
-
+        /* 按钮在横屏模式下的调整 */
         .landscape-mode #toggleButton {
-            left: calc(50vh - 50px);
-            bottom: 10px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            left: 10px;
+            bottom: calc(100vh - 50px);
         }
 
         .landscape-mode #toggleOrangeButton {
-            left: calc(50vh + 50px);
-            bottom: 10px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            left: 10px;
+            bottom: calc(100vh - 110px);
         }
 
         .landscape-mode #toggleGreenButton {
-            left: calc(50vh - 50px);
-            bottom: 50px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            left: 50px;
+            bottom: calc(100vh - 50px);
         }
 
         .landscape-mode #toggleOrientationButton {
-            left: calc(50vh + 50px);
-            bottom: 50px;
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            left: 50px;
+            bottom: calc(100vh - 110px);
         }
     </style>
 </head>
