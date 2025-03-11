@@ -30,26 +30,26 @@
             position: fixed;
             top: 0;
             left: 0;
+            transform-origin: 0 0;
+            transform: rotate(90deg);
+            width: 100vh;
+            height: 100vw;
         }
 
         #map { 
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            transform: rotate(90deg) translateY(-100vh);
-            transform-origin: top left;
+            width: 100vh;
+            height: 100vw;
             border-radius: 8px;
             box-shadow: var(--shadow);
         }
 
         .leaflet-container {
             background: #f0f4f8;
-            width: 100vw !important;
-            height: 100vh !important;
-            transform: rotate(-90deg) translateX(-100vw);
-            transform-origin: top left;
+            width: 100vh !important;
+            height: 100vw !important;
         }
 
         .leaflet-popup-content-wrapper {
@@ -152,22 +152,6 @@
 
         #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
             background-color: #1557b0;
-        }
-
-        @media (orientation: portrait) {
-            body:after {
-                content: "请将设备旋转至横屏模式！";
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 24px;
-                color: #fff;
-                background: rgba(0, 0, 0, 0.7);
-                padding: 20px;
-                border-radius: 10px;
-                z-index: 2000;
-            }
         }
     </style>
 </head>
@@ -452,53 +436,9 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
-            // 强制横屏检测
-            function enforceLandscape() {
-                if (window.innerHeight > window.innerWidth) {
-                    console.log('请旋转至横屏模式');
-                } else {
-                    map.invalidateSize();
-                }
-            }
-
-            // 页面加载时检查并监听屏幕方向
-            enforceLandscape();
-            window.addEventListener('resize', enforceLandscape);
-            window.addEventListener('orientationchange', enforceLandscape);
-
-            // 注册 Service Worker 并监听更新
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
-                        console.log('Service Worker 注册成功，作用域为：', registration.scope);
-
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    if (confirm('有新版本可用，是否刷新应用？')) {
-                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        window.location.reload();
-                                    }
-                                }
-                            });
-                        });
-                    }, function(error) {
-                        console.log('Service Worker 注册失败：', error);
-                    });
-                });
-            }
-
-            // 监听安装提示
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
-            });
+            // 确保地图尺寸正确
+            map.invalidateSize();
         });
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
