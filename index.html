@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -19,23 +20,26 @@
             --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        body {
+        html, body {
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            width: 100%;
             height: 100vh;
-            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
 
         #map { 
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             border-radius: 8px;
             box-shadow: var(--shadow);
-            transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+            transition: transform 0.3s ease;
         }
 
         .leaflet-container {
@@ -150,14 +154,20 @@
         }
 
         /* 横屏模式 */
-        .landscape-mode #map {
-            transform: rotate(90deg);
-            transform-origin: 0 0;
+        .landscape-mode {
             width: 100vh;
             height: 100vw;
+            transform: rotate(90deg);
+            transform-origin: 0 0;
+            position: fixed;
             top: 0;
             left: 0;
-            margin: 0;
+        }
+
+        .landscape-mode #map {
+            width: 100vh;
+            height: 100vw;
+            transform: none; /* 地图不额外旋转 */
         }
 
         .landscape-mode .leaflet-container {
@@ -170,7 +180,7 @@
             transform: rotate(-90deg);
             transform-origin: center center;
             left: 10px;
-            bottom: calc(100vh - 50px);
+            bottom: calc(100vh - 50px); /* 调整位置 */
         }
 
         .landscape-mode #toggleOrangeButton {
@@ -349,15 +359,15 @@
                     var popupContent = `<b>${factory.name}</b>`;
                     if (factory.color === GREEN_COLOR) {
                         popupContent += `<br>出口至德国: ${factory.tariffs.DE}` +
-                                        `<br>出口至摩洛哥: ${factory.tariffs.MA}` +
-                                        `<br>出口至墨西哥: ${factory.tariffs.MX}` +
-                                        `<br>出口至美国: ${factory.tariffs.US}`;
+                                       `<br>出口至摩洛哥: ${factory.tariffs.MA}` +
+                                       `<br>出口至墨西哥: ${factory.tariffs.MX}` +
+                                       `<br>出口至美国: ${factory.tariffs.US}`;
                     } else {
                         popupContent += `<br>出口至美国: ${factory.tariffs.US}` +
-                                        `<br>出口至欧盟: ${factory.tariffs.EU}` +
-                                        (factory.tariffs.CA ? `<br>出口至加拿大: ${factory.tariffs.CA}` : '') +
-                                        (factory.tariffs.MX ? `<br>出口至墨西哥: ${factory.tariffs.MX}` : '') +
-                                        (factory.tariffs.BR ? `<br>出口至巴西: ${factory.tariffs.BR}` : '');
+                                       `<br>出口至欧盟: ${factory.tariffs.EU}` +
+                                       (factory.tariffs.CA ? `<br>出口至加拿大: ${factory.tariffs.CA}` : '') +
+                                       (factory.tariffs.MX ? `<br>出口至墨西哥: ${factory.tariffs.MX}` : '') +
+                                       (factory.tariffs.BR ? `<br>出口至巴西: ${factory.tariffs.BR}` : '');
                     }
                     marker.bindPopup(popupContent, { autoClose: false, closeOnClick: false });
 
@@ -498,6 +508,8 @@
                     // 强制 Leaflet 重新计算地图尺寸
                     setTimeout(() => {
                         map.invalidateSize();
+                        // 重新调整地图视图，确保居中
+                        map.setView([20, 0], 3);
                     }, 300); // 等待 CSS 过渡完成
                 }
             }
@@ -548,6 +560,13 @@
                 e.preventDefault();
                 deferredPrompt = e;
                 console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
+            });
+
+            // 监听窗口大小变化，重新调整地图尺寸
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
             });
         });
     </script>
