@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>全球税率地图</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --blue-color: #4682B4;
+            --orange-color: #FFA500;
+            --green-color: #2ecc71;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #map { 
+            height: 600px; 
+            width: 100%; 
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .leaflet-container {
+            background: #f0f4f8;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 243, 255, 0.9));
+            border-radius: 6px;
+            box-shadow: var(--shadow), 0 0 8px rgba(26, 115, 232, 0.2);
+            padding: 4px;
+            font-family: 'Arial', sans-serif;
+            border: 1px solid rgba(225, 232, 240, 0.7);
+            backdrop-filter: blur(2px);
+        }
+
+        .leaflet-popup-content {
+            width: 100px !important;
+            min-width: 100px;
+            margin: 0;
+            line-height: 1.2;
+            color: #333;
+            font-size: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .leaflet-popup-content b {
+            color: #1a73e8;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+            padding-bottom: 1px;
+            border-bottom: 1px solid rgba(225, 232, 240, 0.7);
+            font-weight: 600;
+        }
+
+        .leaflet-popup-tip {
+            display: none;
+        }
+
+        .custom-dot div {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .custom-dot:hover div {
+            transform: scale(1.5);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaflet-polyline {
+            stroke-dasharray: 3 9;
+            stroke-width: 1.5;
+            stroke-opacity: 0.5;
+            transition: stroke-width 0.3s ease;
+        }
+
+        .leaflet-polyline:hover {
+            stroke-width: 3;
+            stroke-opacity: 1;
+        }
+
+        .leaflet-polygon {
+            fill-opacity: 0.7;
+            stroke-width: 1;
+            transition: fill-opacity 0.3s ease;
+        }
+
+        .leaflet-polygon:hover {
+            fill-opacity: 1;
+        }
+
+        #toggleButton, #toggleOrangeButton, #toggleGreenButton {
+            position: absolute;
+            z-index: 1000;
+            padding: 8px 16px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s ease;
+        }
+
+        #toggleButton {
+            left: 10px;
+            bottom: 10px;
+        }
+
+        #toggleOrangeButton {
+            left: 110px;
+            bottom: 10px;
+        }
+
+        #toggleGreenButton {
+            left: 10px;
+            bottom: 50px;
+        }
+
+        #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
+            background-color: #1557b0;
+        }
+    </style>
+</head>
+<body>
+    <button id="toggleButton">成品出口</button>
+    <button id="toggleOrangeButton">拟建工厂出口</button>
+    <button id="toggleGreenButton">铝锭出口税</button>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const BLUE_COLOR = '#4682B4';
+            const ORANGE_COLOR = '#FFA500';
+            const GREEN_COLOR = '#2ecc71';
+
+            var map = L.map('map').setView([20, 0], 3);
+
+            L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+                subdomains: ['1', '2', '3', '4'],
+                attribution: '© 高德地图'
+            }).addTo(map);
+
+            function createIcon(color, gradientColors, popupAnchor = [0, -5]) {
+                return L.divIcon({
+                    className: 'custom-dot',
+                    html: `<div style="background: linear-gradient(45deg, ${gradientColors.join(', ')}); width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);"></div>`,
+                    iconSize: [10, 10],
+                    iconAnchor: [5, 5],
+                    popupAnchor: popupAnchor
+                });
+            }
+
+            var blueDotIconCN = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
+            var blueDotIconUS = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
+            var blueDotIconMEX = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
+            var blueDotIconMA = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [75, 50]);
+            var blueDotIconDE = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
+
+            var orangeDotIconPT = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [0, -5]);
+            var orangeDotIconHU = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [75, 50]);
+            var orangeDotIconVN = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [0, -5]);
+            var orangeDotIconMY = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [-80, 95]);
+            var orangeDotIconID = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [75, 50]);
+            var orangeDotIconTH = createIcon(ORANGE_COLOR, ['#e67e22', '#d35400'], [-75, 50]);
+
+            var greenSquareIconAE = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+            var greenSquareIconRU = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+            var greenSquareIconMX = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+            var greenSquareIconCA = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+            var greenSquareIconBE = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+            var greenSquareIconIN = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
+
+            var factories = [
+                { name: "中国CN", coords: [39.9354, 119.5996], tariffs: { US: "27.5%", EU: "25.3%" }, country: "CN", color: BLUE_COLOR, icon: blueDotIconCN },
+                { name: "美国US", coords: [42.3314, -83.0458], tariffs: { US: "0%", EU: "0%" }, country: "US", color: BLUE_COLOR, icon: blueDotIconUS },
+                { name: "墨西哥MEX", coords: [25.6866, -100.3161], tariffs: { US: "0%", EU: "0%" }, country: "MEX", color: BLUE_COLOR, icon: blueDotIconMEX },
+                { name: "摩洛哥MA", coords: [34.2610, -6.5802], tariffs: { US: "0%", EU: "17.5%" }, country: "MA", color: BLUE_COLOR, icon: blueDotIconMA },
+                { name: "德国DE", coords: [52.1508, 9.9511], tariffs: { US: "0%", EU: "0%" }, country: "DE", color: BLUE_COLOR, icon: blueDotIconDE }
+            ];
+
+            var newFactories = [
+                { name: "葡萄牙PT", coords: [38.7223, -9.1393], tariffs: { US: "2.5%", EU: "0%", CA: "0%", MX: "0%", BR: "14%" }, country: "PT", color: ORANGE_COLOR, icon: orangeDotIconPT },
+                { name: "匈牙利HU", coords: [47.4979, 19.0402], tariffs: { US: "2.5%", EU: "0%", CA: "0%", MX: "0%", BR: "14%" }, country: "HU", color: ORANGE_COLOR, icon: orangeDotIconHU },
+                { name: "越南VN", coords: [21.0278, 105.8342], tariffs: { US: "2.5%", EU: "2.5%", CA: "0%", MX: "0%", BR: "14%" }, country: "VN", color: ORANGE_COLOR, icon: orangeDotIconVN },
+                { name: "马来西亚MY", coords: [3.1390, 101.6869], tariffs: { US: "2.5%", EU: "2.5%", CA: "0%", MX: "0%", BR: "14%" }, country: "MY", color: ORANGE_COLOR, icon: orangeDotIconMY },
+                { name: "印度尼西亚ID", coords: [-6.2088, 106.8456], tariffs: { US: "2.5%", EU: "2.5%", CA: "0%", MX: "10%", BR: "14%" }, country: "ID", color: ORANGE_COLOR, icon: orangeDotIconID },
+                { name: "泰国TH", coords: [13.7563, 100.5018], tariffs: { US: "2.5%", EU: "2.5%", CA: "0%", MX: "10%", BR: "14%" }, country: "TH", color: ORANGE_COLOR, icon: orangeDotIconTH }
+            ];
+
+            var greenFactories = [
+                { name: "迪拜AE", coords: [25.2048, 55.2708], tariffs: { DE: "0%", MA: "10%", MX: "5%", US: "25%" }, country: "AE", color: GREEN_COLOR, icon: greenSquareIconAE },
+                { name: "莫斯科RU", coords: [55.7558, 37.6173], tariffs: { DE: "0%", MA: "10%", MX: "5%", US: "25%" }, country: "RU", color: GREEN_COLOR, icon: greenSquareIconRU },
+                { name: "墨西哥城MX", coords: [19.4326, -99.1332], tariffs: { DE: "0%", MA: "10%", MX: "0%", US: "25%" }, country: "MX", color: GREEN_COLOR, icon: greenSquareIconMX },
+                { name: "加拿大CA", coords: [45.4215, -75.6972], tariffs: { DE: "0%", MA: "10%", MX: "0%", US: "25%" }, country: "CA", color: GREEN_COLOR, icon: greenSquareIconCA },
+                { name: "欧盟EU", coords: [50.8503, 4.3517], tariffs: { DE: "0%", MA: "25%", MX: "5%", US: "10%" }, country: "BE", color: GREEN_COLOR, icon: greenSquareIconBE },
+                { name: "印度IN", coords: [28.6139, 77.2090], tariffs: { DE: "0%", MA: "0%", MX: "0%", US: "0%" }, country: "IN", color: GREEN_COLOR, icon: greenSquareIconIN }
+            ];
+
+            var allFactories = factories.concat(newFactories, greenFactories);
+
+            var exportCountries = {
+                US: [42.3314, -83.0458],
+                EU: [50.8503, 4.3517],
+                CA: [45.4215, -75.6972],
+                MX: [25.6866, -100.3161],
+                BR: [-15.8267, -47.9218],
+                DE: [52.1508, 9.9511],
+                MA: [34.2610, -6.5802]
+            };
+
+            var markers = [];
+            var blueMarkers = [];
+            var orangeMarkers = [];
+            var greenMarkers = [];
+            var factoryLines = {};
+            var isBluePopupsVisible = true;
+            var isOrangePopupsVisible = true;
+            var isGreenPopupsVisible = true;
+
+            function drawCurvedArrow(from, to, color) {
+                var midLat = (from[0] + to[0]) / 2;
+                var midLng = (from[1] + to[1]) / 2;
+                var offset = Math.abs(from[1] - to[1]) * 0.08;
+                var controlPoint = [midLat + offset, midLng];
+
+                var points = [];
+                for (var t = 0; t < 1; t += 0.05) {
+                    var lat = (1 - t) * (1 - t) * from[0] + 2 * (1 - t) * t * controlPoint[0] + t * t * to[0];
+                    var lng = (1 - t) * (1 - t) * from[1] + 2 * (1 - t) * t * controlPoint[1] + t * t * to[1];
+                    points.push([lat, lng]);
+                }
+                points.push(to);
+
+                var line = L.polyline(points, {
+                    color: color,
+                    weight: 2,
+                    opacity: 0.7,
+                    dashArray: '2 4'
+                });
+
+                var dx = to[1] - from[1];
+                var dy = to[0] - from[0];
+                var angle = Math.atan2(dx, dy) * 180 / Math.PI;
+
+                var arrowSize = 0.4;
+
+                var arrowPoint1 = L.latLng(
+                    to[0] - arrowSize * Math.cos((angle + 150) * Math.PI / 180),
+                    to[1] - arrowSize * Math.sin((angle + 150) * Math.PI / 180)
+                );
+                var arrowPoint2 = L.latLng(
+                    to[0] - arrowSize * Math.cos((angle - 150) * Math.PI / 180),
+                    to[1] - arrowSize * Math.sin((angle - 150) * Math.PI / 180)
+                );
+
+                var arrow = L.polygon([
+                    to,
+                    arrowPoint1,
+                    arrowPoint2
+                ], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.6,
+                    weight: 1
+                });
+
+                return [line, arrow];
+            }
+
+            function createMarkers(factories) {
+                factories.forEach(function(factory) {
+                    var marker = L.marker(factory.coords, { icon: factory.icon }).addTo(map);
+                    var popupContent = `<b>${factory.name}</b>`;
+                    if (factory.color === GREEN_COLOR) {
+                        popupContent += `<br>出口至德国: ${factory.tariffs.DE}` +
+                                        `<br>出口至摩洛哥: ${factory.tariffs.MA}` +
+                                        `<br>出口至墨西哥: ${factory.tariffs.MX}` +
+                                        `<br>出口至美国: ${factory.tariffs.US}`;
+                    } else {
+                        popupContent += `<br>出口至美国: ${factory.tariffs.US}` +
+                                        `<br>出口至欧盟: ${factory.tariffs.EU}` +
+                                        (factory.tariffs.CA ? `<br>出口至加拿大: ${factory.tariffs.CA}` : '') +
+                                        (factory.tariffs.MX ? `<br>出口至墨西哥: ${factory.tariffs.MX}` : '') +
+                                        (factory.tariffs.BR ? `<br>出口至巴西: ${factory.tariffs.BR}` : '');
+                    }
+                    marker.bindPopup(popupContent, { autoClose: false, closeOnClick: false });
+
+                    factoryLines[factory.name] = {};
+                    if (factory.color === GREEN_COLOR) {
+                        ['DE', 'MA', 'MX', 'US'].forEach(target => {
+                            factoryLines[factory.name][target] = drawCurvedArrow(factory.coords, exportCountries[target], factory.color);
+                            factoryLines[factory.name][target][0].remove();
+                            factoryLines[factory.name][target][1].remove();
+                        });
+                    } else {
+                        if (factory.country !== "US") {
+                            factoryLines[factory.name].US = drawCurvedArrow(factory.coords, exportCountries.US, factory.color);
+                        }
+                        if (factory.country !== "DE" && factory.country !== "PT" && factory.country !== "HU") {
+                            factoryLines[factory.name].EU = drawCurvedArrow(factory.coords, exportCountries.EU, factory.color);
+                        }
+                        if (factory.color === ORANGE_COLOR) {
+                            if (factory.country !== "CA") {
+                                factoryLines[factory.name].CA = drawCurvedArrow(factory.coords, exportCountries.CA, factory.color);
+                            }
+                            if (factory.country !== "MX") {
+                                factoryLines[factory.name].MX = drawCurvedArrow(factory.coords, exportCountries.MX, factory.color);
+                            }
+                            if (factory.country !== "BR") {
+                                factoryLines[factory.name].BR = drawCurvedArrow(factory.coords, exportCountries.BR, factory.color);
+                            }
+                        }
+                        for (var target in factoryLines[factory.name]) {
+                            if (factoryLines[factory.name][target]) {
+                                factoryLines[factory.name][target][0].remove();
+                                factoryLines[factory.name][target][1].remove();
+                            }
+                        }
+                    }
+
+                    marker.on('popupopen', function() {
+                        for (var target in factoryLines[factory.name]) {
+                            if (factoryLines[factory.name][target]) {
+                                factoryLines[factory.name][target][0].addTo(map);
+                                factoryLines[factory.name][target][1].addTo(map);
+                            }
+                        }
+                    });
+
+                    marker.on('popupclose', function() {
+                        for (var target in factoryLines[factory.name]) {
+                            if (factoryLines[factory.name][target]) {
+                                factoryLines[factory.name][target][0].remove();
+                                factoryLines[factory.name][target][1].remove();
+                            }
+                        }
+                    });
+
+                    markers.push(marker);
+                    if (factory.color === BLUE_COLOR) {
+                        blueMarkers.push(marker);
+                    } else if (factory.color === ORANGE_COLOR) {
+                        orangeMarkers.push(marker);
+                    } else if (factory.color === GREEN_COLOR) {
+                        greenMarkers.push(marker);
+                    }
+                });
+            }
+
+            createMarkers(allFactories);
+
+            markers.forEach(function(marker) {
+                marker.openPopup();
+            });
+
+            map.on('click', function() {
+                markers.forEach(function(marker) {
+                    marker.closePopup();
+                });
+            });
+
+            var toggleButton = document.getElementById('toggleButton');
+            toggleButton.addEventListener('click', function() {
+                if (isBluePopupsVisible) {
+                    blueMarkers.forEach(function(marker) {
+                        marker.closePopup();
+                    });
+                } else {
+                    blueMarkers.forEach(function(marker) {
+                        marker.openPopup();
+                    });
+                }
+                isBluePopupsVisible = !isBluePopupsVisible;
+            });
+
+            var toggleOrangeButton = document.getElementById('toggleOrangeButton');
+            toggleOrangeButton.addEventListener('click', function() {
+                if (isOrangePopupsVisible) {
+                    orangeMarkers.forEach(function(marker) {
+                        marker.closePopup();
+                    });
+                } else {
+                    orangeMarkers.forEach(function(marker) {
+                        marker.openPopup();
+                    });
+                }
+                isOrangePopupsVisible = !isOrangePopupsVisible;
+            });
+
+            var toggleGreenButton = document.getElementById('toggleGreenButton');
+            toggleGreenButton.addEventListener('click', function() {
+                if (isGreenPopupsVisible) {
+                    greenMarkers.forEach(function(marker) {
+                        marker.closePopup();
+                    });
+                } else {
+                    greenMarkers.forEach(function(marker) {
+                        marker.openPopup();
+                    });
+                }
+                isGreenPopupsVisible = !isGreenPopupsVisible;
+            });
+
+            // 注册 Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                        console.log('Service Worker 注册成功，作用域为：', registration.scope);
+                    }, function(error) {
+                        console.log('Service Worker 注册失败：', error);
+                    });
+                });
+            }
+        });
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>
