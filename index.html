@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>全球税率地图V2</title>
+    <title>全球税率地图</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -129,6 +129,44 @@
         #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
             background-color: #1557b0;
         }
+
+        /* 手机设备强制横屏 */
+        @media only screen and (max-width: 768px) {
+            body {
+                transform: rotate(90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                overflow-x: hidden;
+                position: fixed;
+                top: 100%;
+                left: 0;
+                margin: 0;
+            }
+            #map {
+                height: 100vw; /* 使用屏幕宽度作为高度 */
+                width: 100vh; /* 使用屏幕高度作为宽度 */
+            }
+            .leaflet-container {
+                height: 100vw !important;
+                width: 100vh !important;
+            }
+            #toggleButton {
+                left: 20px;
+                bottom: 20px;
+                transform: rotate(-90deg);
+            }
+            #toggleOrangeButton {
+                left: 120px;
+                bottom: 20px;
+                transform: rotate(-90deg);
+            }
+            #toggleGreenButton {
+                left: 20px;
+                bottom: 60px;
+                transform: rotate(-90deg);
+            }
+        }
     </style>
 </head>
 <body>
@@ -182,7 +220,7 @@
             var greenSquareIconIN = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
 
             var factories = [
-                { name: "中国CHN", coords: [39.9354, 119.5996], tariffs: { US: "27.5%", EU: "25.3%" }, country: "CN", color: BLUE_COLOR, icon: blueDotIconCN },
+                { name: "中国CN", coords: [39.9354, 119.5996], tariffs: { US: "27.5%", EU: "25.3%" }, country: "CN", color: BLUE_COLOR, icon: blueDotIconCN },
                 { name: "美国US", coords: [42.3314, -83.0458], tariffs: { US: "0%", EU: "0%" }, country: "US", color: BLUE_COLOR, icon: blueDotIconUS },
                 { name: "墨西哥MEX", coords: [25.6866, -100.3161], tariffs: { US: "0%", EU: "0%" }, country: "MEX", color: BLUE_COLOR, icon: blueDotIconMEX },
                 { name: "摩洛哥MA", coords: [34.2610, -6.5802], tariffs: { US: "0%", EU: "17.5%" }, country: "MA", color: BLUE_COLOR, icon: blueDotIconMA },
@@ -412,6 +450,20 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
+            // 检测手机设备并尝试锁定横屏
+            function isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            }
+
+            if (isMobileDevice() && 'orientation' in screen) {
+                screen.orientation.lock('landscape').then(() => {
+                    console.log('屏幕已锁定为横屏');
+                }).catch(error => {
+                    console.log('锁定屏幕方向失败: ', error);
+                    // CSS 后备方案已在样式中实现
+                });
+            }
+
             // 注册 Service Worker 并监听更新
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
@@ -442,7 +494,6 @@
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                // 可选：提示用户重新安装
                 console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
             });
         });
