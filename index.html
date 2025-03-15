@@ -135,7 +135,7 @@
         }
 
         .table-container {
-            display: none;
+            display: none; /* 默认隐藏 */
             width: 100%;
             padding: 20px;
             background-color: #fff;
@@ -143,7 +143,8 @@
             margin-top: 10px;
         }
 
-        @media screen and (orientation: portrait) and (max-width: 768px) {
+        /* 在移动设备竖屏时显示表格 */
+        @media screen and (max-width: 1024px) and (orientation: portrait) {
             .table-container {
                 display: block;
             }
@@ -519,8 +520,12 @@
 
             // 生成表格数据
             function generateTable(data, containerId, headers) {
+                console.log(`Generating table for ${containerId} with data:`, data);
                 const container = document.getElementById(containerId);
-                if (!container) return;
+                if (!container) {
+                    console.error(`Container ${containerId} not found`);
+                    return;
+                }
                 const table = document.createElement('table');
                 const thead = document.createElement('thead');
                 const tbody = document.createElement('tbody');
@@ -553,6 +558,7 @@
                 });
                 table.appendChild(tbody);
                 container.appendChild(table);
+                console.log(`Table appended to ${containerId}:`, container.innerHTML);
             }
 
             // 初始化表格
@@ -574,7 +580,7 @@
 
             // 动态调整表格显示
             function updateTableDisplay() {
-                const isMobile = window.innerWidth <= 768;
+                const isMobile = window.innerWidth <= 1024;
                 const isPortrait = window.innerWidth < window.innerHeight;
                 const tableContainer = document.querySelector('.table-container');
                 const hint = document.getElementById('orientation-hint');
@@ -586,6 +592,7 @@
                     if (isMobile) hint.style.display = 'block';
                     else hint.style.display = 'none';
                 }
+                console.log(`Table display: ${tableContainer.style.display}, isMobile: ${isMobile}, isPortrait: ${isPortrait}`);
             }
 
             window.addEventListener('resize', updateTableDisplay);
@@ -623,7 +630,5 @@
             });
         });
     </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
