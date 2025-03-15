@@ -209,6 +209,19 @@
         tr:hover {
             background-color: #f1f1f1;
         }
+
+        #orientation-hint {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1001;
+        }
     </style>
 </head>
 <body>
@@ -228,6 +241,7 @@
         <div class="tab-content" id="planned-tab"></div>
         <div class="tab-content" id="aluminum-tab"></div>
     </div>
+    <div id="orientation-hint">请旋转设备到横屏模式以查看表格</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -245,8 +259,6 @@
 
             map.on('tileerror', function() {
                 console.log('地图瓦片加载失败，请检查网络连接');
-                // 可选：显示错误提示
-                // alert('地图加载失败，请检查网络连接');
             });
 
             function createIcon(color, gradientColors, popupAnchor = [0, -5]) {
@@ -512,14 +524,20 @@
 
             // 生成表格数据
             function generateTable(data, containerId, headers) {
-                let table = document.createElement('table');
-                let thead = document.createElement('thead');
-                let tbody = document.createElement('tbody');
+                console.log(`Generating table for ${containerId} with data:`, data); // 调试
+                const container = document.getElementById(containerId);
+                if (!container) {
+                    console.error(`Container ${containerId} not found`);
+                    return;
+                }
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
 
                 // 创建表头
-                let headerRow = document.createElement('tr');
+                const headerRow = document.createElement('tr');
                 headers.forEach(header => {
-                    let th = document.createElement('th');
+                    const th = document.createElement('th');
                     th.textContent = header;
                     headerRow.appendChild(th);
                 });
@@ -528,17 +546,17 @@
 
                 // 创建表体
                 data.forEach(item => {
-                    let row = document.createElement('tr');
-                    let nameCell = document.createElement('td');
+                    const row = document.createElement('tr');
+                    const nameCell = document.createElement('td');
                     nameCell.textContent = item.name;
                     row.appendChild(nameCell);
 
-                    let coordsCell = document.createElement('td');
+                    const coordsCell = document.createElement('td');
                     coordsCell.textContent = `(${item.coords[0]}, ${item.coords[1]})`;
                     row.appendChild(coordsCell);
 
-                    let tariffsCell = document.createElement('td');
-                    let tariffs = Object.entries(item.tariffs).map(([key, value]) => `${key}: ${value}`).join('<br>');
+                    const tariffsCell = document.createElement('td');
+                    const tariffs = Object.entries(item.tariffs).map(([key, value]) => `${key}: ${value}`).join('<br>');
                     tariffsCell.innerHTML = tariffs;
                     row.appendChild(tariffsCell);
 
@@ -546,7 +564,8 @@
                 });
                 table.appendChild(tbody);
 
-                document.getElementById(containerId).appendChild(table);
+                container.appendChild(table);
+                console.log(`Table appended to ${containerId}:`, container.innerHTML); // 调试
             }
 
             // 初始化表格
@@ -568,24 +587,33 @@
             });
 
             // 动态调整表格显示
-            window.addEventListener('orientationchange', function() {
-                if (window.matchMedia("(orientation: landscape)").matches && window.innerWidth <= 768) {
-                    document.querySelector('.table-container').style.display = 'block';
+            function updateTableDisplay() {
+                const isMobile = window.innerWidth <= 768;
+                const isLandscape = window.innerWidth > window.innerHeight;
+                const tableContainer = document.querySelector('.table-container');
+                const hint = document.getElementById('orientation-hint');
+                if (isMobile && isLandscape) {
+                    tableContainer.style.display = 'block';
+                    hint.style.display = 'none';
                 } else {
-                    document.querySelector('.table-container').style.display = 'none';
+                    tableContainer.style.display = 'none';
+                    if (isMobile) {
+                        hint.style.display = 'block';
+                    } else {
+                        hint.style.display = 'none';
+                    }
                 }
-            });
-
-            // 初始检查
-            if (window.matchMedia("(orientation: landscape)").matches && window.innerWidth <= 768) {
-                document.querySelector('.table-container').style.display = 'block';
             }
+
+            window.addEventListener('resize', updateTableDisplay);
+            window.addEventListener('orientationchange', updateTableDisplay);
+            updateTableDisplay(); // 初始调用
 
             // 注册 Service Worker 并监听更新
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
-                        console.log('Service Worker 注册成功，作用域为：', registration.scope);
+                        console.log('Service Worker 注册成功，作用域为：', registration.scope');
 
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
