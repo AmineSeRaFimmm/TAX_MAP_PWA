@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>全球税率地图</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -96,9 +97,19 @@
             fill-opacity: 1;
         }
 
-        #toggleButton, #toggleOrangeButton, #toggleGreenButton {
+        .button-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
             position: absolute;
+            bottom: 10px;
+            left: 10px;
             z-index: 1000;
+        }
+
+        .button-container button {
             padding: 8px 16px;
             background-color: #1a73e8;
             color: white;
@@ -109,33 +120,114 @@
             font-size: 14px;
             box-shadow: var(--shadow);
             transition: background-color 0.3s ease;
+            min-width: 100px;
         }
 
-        #toggleButton {
-            left: 10px;
-            bottom: 10px;
-        }
-
-        #toggleOrangeButton {
-            left: 110px;
-            bottom: 10px;
-        }
-
-        #toggleGreenButton {
-            left: 10px;
-            bottom: 50px;
-        }
-
-        #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
+        .button-container button:hover {
             background-color: #1557b0;
+        }
+
+        @media screen and (max-width: 480px) {
+            .button-container button {
+                min-width: 80px;
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+
+        .table-container {
+            display: none;
+            width: 100%;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+        }
+
+        @media screen and (orientation: landscape) and (max-width: 768px) {
+            .table-container {
+                display: block;
+            }
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab-button:hover {
+            background-color: #1557b0;
+        }
+
+        .tab-button.active {
+            background-color: #0d47a1;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
         }
     </style>
 </head>
 <body>
-    <button id="toggleButton">成品出口</button>
-    <button id="toggleOrangeButton">拟建工厂出口</button>
-    <button id="toggleGreenButton">铝锭出口税</button>
+    <div class="button-container">
+        <button id="toggleButton">成品出口</button>
+        <button id="toggleOrangeButton">拟建工厂出口</button>
+        <button id="toggleGreenButton">铝锭出口税</button>
+    </div>
     <div id="map"></div>
+    <div class="table-container">
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="existing">Existing Factories</button>
+            <button class="tab-button" data-tab="planned">Planned Factories</button>
+            <button class="tab-button" data-tab="aluminum">Aluminum Suppliers</button>
+        </div>
+        <div class="tab-content active" id="existing-tab"></div>
+        <div class="tab-content" id="planned-tab"></div>
+        <div class="tab-content" id="aluminum-tab"></div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -150,6 +242,12 @@
                 subdomains: ['1', '2', '3', '4'],
                 attribution: '© 高德地图'
             }).addTo(map);
+
+            map.on('tileerror', function() {
+                console.log('地图瓦片加载失败，请检查网络连接');
+                // 可选：显示错误提示
+                // alert('地图加载失败，请检查网络连接');
+            });
 
             function createIcon(color, gradientColors, popupAnchor = [0, -5]) {
                 return L.divIcon({
@@ -412,18 +510,87 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
+            // 生成表格数据
+            function generateTable(data, containerId, headers) {
+                let table = document.createElement('table');
+                let thead = document.createElement('thead');
+                let tbody = document.createElement('tbody');
+
+                // 创建表头
+                let headerRow = document.createElement('tr');
+                headers.forEach(header => {
+                    let th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                // 创建表体
+                data.forEach(item => {
+                    let row = document.createElement('tr');
+                    let nameCell = document.createElement('td');
+                    nameCell.textContent = item.name;
+                    row.appendChild(nameCell);
+
+                    let coordsCell = document.createElement('td');
+                    coordsCell.textContent = `(${item.coords[0]}, ${item.coords[1]})`;
+                    row.appendChild(coordsCell);
+
+                    let tariffsCell = document.createElement('td');
+                    let tariffs = Object.entries(item.tariffs).map(([key, value]) => `${key}: ${value}`).join('<br>');
+                    tariffsCell.innerHTML = tariffs;
+                    row.appendChild(tariffsCell);
+
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+
+                document.getElementById(containerId).appendChild(table);
+            }
+
+            // 初始化表格
+            generateTable(factories, 'existing-tab', ['Factory Name', 'Coordinates', 'Tariffs']);
+            generateTable(newFactories, 'planned-tab', ['Factory Name', 'Coordinates', 'Tariffs']);
+            generateTable(greenFactories, 'aluminum-tab', ['Supplier Name', 'Coordinates', 'Tariffs']);
+
+            // 选项卡切换功能
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    button.classList.add('active');
+                    document.getElementById(button.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+
+            // 动态调整表格显示
+            window.addEventListener('orientationchange', function() {
+                if (window.matchMedia("(orientation: landscape)").matches && window.innerWidth <= 768) {
+                    document.querySelector('.table-container').style.display = 'block';
+                } else {
+                    document.querySelector('.table-container').style.display = 'none';
+                }
+            });
+
+            // 初始检查
+            if (window.matchMedia("(orientation: landscape)").matches && window.innerWidth <= 768) {
+                document.querySelector('.table-container').style.display = 'block';
+            }
+
             // 注册 Service Worker 并监听更新
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
                         console.log('Service Worker 注册成功，作用域为：', registration.scope);
 
-                        // 监听 Service Worker 更新
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // 新版本已安装，提示用户刷新
                                     if (confirm('有新版本可用，是否刷新应用？')) {
                                         newWorker.postMessage({ type: 'SKIP_WAITING' });
                                         window.location.reload();
@@ -437,17 +604,17 @@
                 });
             }
 
-            // 监听安装提示，提示用户重新添加到主屏幕
+            // 监听安装提示
             let deferredPrompt;
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                // 可选：提示用户重新安装
                 console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
             });
         });
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'92094d339c11b087',t:'MTc0MjAxMzI5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
