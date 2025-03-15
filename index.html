@@ -2,7 +2,6 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>全球税率地图</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -97,19 +96,9 @@
             fill-opacity: 1;
         }
 
-        .button-container {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 10px;
+        #toggleButton, #toggleOrangeButton, #toggleGreenButton {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
             z-index: 1000;
-        }
-
-        .button-container button {
             padding: 8px 16px;
             background-color: #1a73e8;
             color: white;
@@ -120,128 +109,33 @@
             font-size: 14px;
             box-shadow: var(--shadow);
             transition: background-color 0.3s ease;
-            min-width: 100px;
         }
 
-        .button-container button:hover {
+        #toggleButton {
+            left: 10px;
+            bottom: 10px;
+        }
+
+        #toggleOrangeButton {
+            left: 110px;
+            bottom: 10px;
+        }
+
+        #toggleGreenButton {
+            left: 10px;
+            bottom: 50px;
+        }
+
+        #toggleButton:hover, #toggleOrangeButton:hover, #toggleGreenButton:hover {
             background-color: #1557b0;
-        }
-
-        @media screen and (max-width: 480px) {
-            .button-container button {
-                min-width: 80px;
-                font-size: 12px;
-                padding: 6px 12px;
-            }
-        }
-
-        .table-container {
-            display: none;
-            width: 100%;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: var(--shadow);
-            margin-top: 10px;
-        }
-
-        @media screen and (orientation: landscape) and (max-width: 768px) {
-            .table-container {
-                display: block;
-            }
-        }
-
-        .tab-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .tab-button {
-            padding: 10px 20px;
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Arial', sans-serif;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        .tab-button:hover {
-            background-color: #1557b0;
-        }
-
-        .tab-button.active {
-            background-color: #0d47a1;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'Arial', sans-serif;
-            font-size: 12px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-
-        #orientation-hint {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 1001;
         }
     </style>
 </head>
 <body>
-    <div class="button-container">
-        <button id="toggleButton">成品出口</button>
-        <button id="toggleOrangeButton">拟建工厂出口</button>
-        <button id="toggleGreenButton">铝锭出口税</button>
-    </div>
+    <button id="toggleButton">成品出口</button>
+    <button id="toggleOrangeButton">拟建工厂出口</button>
+    <button id="toggleGreenButton">铝锭出口税</button>
     <div id="map"></div>
-    <div class="table-container">
-        <div class="tab-buttons">
-            <button class="tab-button active" data-tab="existing">Existing Factories</button>
-            <button class="tab-button" data-tab="planned">Planned Factories</button>
-            <button class="tab-button" data-tab="aluminum">Aluminum Suppliers</button>
-        </div>
-        <div class="tab-content active" id="existing-tab"></div>
-        <div class="tab-content" id="planned-tab"></div>
-        <div class="tab-content" id="aluminum-tab"></div>
-    </div>
-    <div id="orientation-hint">请旋转设备到横屏模式以查看表格</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -250,22 +144,13 @@
             const ORANGE_COLOR = '#FFA500';
             const GREEN_COLOR = '#2ecc71';
 
-            // 地图初始化
             var map = L.map('map').setView([20, 0], 3);
 
-            // 使用 OpenStreetMap 瓦片服务
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
+            L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+                subdomains: ['1', '2', '3', '4'],
+                attribution: '© 高德地图'
             }).addTo(map);
 
-            // 地图加载错误处理
-            map.on('tileerror', function() {
-                console.log('地图瓦片加载失败，请检查网络连接');
-                // 可选：显示错误提示
-                // alert('地图加载失败，请检查网络连接');
-            });
-
-            // 图标创建函数
             function createIcon(color, gradientColors, popupAnchor = [0, -5]) {
                 return L.divIcon({
                     className: 'custom-dot',
@@ -276,7 +161,6 @@
                 });
             }
 
-            // 图标定义
             var blueDotIconCN = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
             var blueDotIconUS = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
             var blueDotIconMEX = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
@@ -297,7 +181,6 @@
             var greenSquareIconBE = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
             var greenSquareIconIN = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
 
-            // 数据定义
             var factories = [
                 { name: "中国CN", coords: [39.9354, 119.5996], tariffs: { US: "27.5%", EU: "25.3%" }, country: "CN", color: BLUE_COLOR, icon: blueDotIconCN },
                 { name: "美国US", coords: [42.3314, -83.0458], tariffs: { US: "0%", EU: "0%" }, country: "US", color: BLUE_COLOR, icon: blueDotIconUS },
@@ -345,7 +228,6 @@
             var isOrangePopupsVisible = true;
             var isGreenPopupsVisible = true;
 
-            // 绘制箭头
             function drawCurvedArrow(from, to, color) {
                 var midLat = (from[0] + to[0]) / 2;
                 var midLng = (from[1] + to[1]) / 2;
@@ -396,7 +278,6 @@
                 return [line, arrow];
             }
 
-            // 创建标记
             function createMarkers(factories) {
                 factories.forEach(function(factory) {
                     var marker = L.marker(factory.coords, { icon: factory.icon }).addTo(map);
@@ -531,103 +412,18 @@
                 isGreenPopupsVisible = !isGreenPopupsVisible;
             });
 
-            // 生成表格数据
-            function generateTable(data, containerId, headers) {
-                console.log(`Generating table for ${containerId} with data:`, data); // 调试
-                const container = document.getElementById(containerId);
-                if (!container) {
-                    console.error(`Container ${containerId} not found`);
-                    return;
-                }
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
-
-                // 创建表头
-                const headerRow = document.createElement('tr');
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
-                table.appendChild(thead);
-
-                // 创建表体
-                data.forEach(item => {
-                    const row = document.createElement('tr');
-                    const nameCell = document.createElement('td');
-                    nameCell.textContent = item.name;
-                    row.appendChild(nameCell);
-
-                    const coordsCell = document.createElement('td');
-                    coordsCell.textContent = `(${item.coords[0]}, ${item.coords[1]})`;
-                    row.appendChild(coordsCell);
-
-                    const tariffsCell = document.createElement('td');
-                    const tariffs = Object.entries(item.tariffs).map(([key, value]) => `${key}: ${value}`).join('<br>');
-                    tariffsCell.innerHTML = tariffs;
-                    row.appendChild(tariffsCell);
-
-                    tbody.appendChild(row);
-                });
-                table.appendChild(tbody);
-
-                container.appendChild(table);
-                console.log(`Table appended to ${containerId}:`, container.innerHTML); // 调试
-            }
-
-            // 初始化表格
-            generateTable(factories, 'existing-tab', ['Factory Name', 'Coordinates', 'Tariffs']);
-            generateTable(newFactories, 'planned-tab', ['Factory Name', 'Coordinates', 'Tariffs']);
-            generateTable(greenFactories, 'aluminum-tab', ['Supplier Name', 'Coordinates', 'Tariffs']);
-
-            // 选项卡切换功能
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
-                    button.classList.add('active');
-                    document.getElementById(button.dataset.tab + '-tab').classList.add('active');
-                });
-            });
-
-            // 动态调整表格显示
-            function updateTableDisplay() {
-                const isMobile = window.innerWidth <= 768;
-                const isLandscape = window.innerWidth > window.innerHeight;
-                const tableContainer = document.querySelector('.table-container');
-                const hint = document.getElementById('orientation-hint');
-                if (isMobile && isLandscape) {
-                    tableContainer.style.display = 'block';
-                    hint.style.display = 'none';
-                } else {
-                    tableContainer.style.display = 'none';
-                    if (isMobile) {
-                        hint.style.display = 'block';
-                    } else {
-                        hint.style.display = 'none';
-                    }
-                }
-            }
-
-            window.addEventListener('resize', updateTableDisplay);
-            window.addEventListener('orientationchange', updateTableDisplay);
-            updateTableDisplay(); // 初始调用
-
             // 注册 Service Worker 并监听更新
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
                         console.log('Service Worker 注册成功，作用域为：', registration.scope);
 
+                        // 监听 Service Worker 更新
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 新版本已安装，提示用户刷新
                                     if (confirm('有新版本可用，是否刷新应用？')) {
                                         newWorker.postMessage({ type: 'SKIP_WAITING' });
                                         window.location.reload();
@@ -641,17 +437,17 @@
                 });
             }
 
-            // 监听安装提示
+            // 监听安装提示，提示用户重新添加到主屏幕
             let deferredPrompt;
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
+                // 可选：提示用户重新安装
                 console.log('检测到安装提示，用户可能需要重新添加到主屏幕');
             });
         });
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91c132bed9ac455a',t:'MTc0MTI1NzI0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e749e08d8a673f',t:'MTc0MTY1NjY0Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'92094d339c11b087',t:'MTc0MjAxMzI5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
