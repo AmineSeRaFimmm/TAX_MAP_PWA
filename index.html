@@ -250,17 +250,22 @@
             const ORANGE_COLOR = '#FFA500';
             const GREEN_COLOR = '#2ecc71';
 
+            // 地图初始化
             var map = L.map('map').setView([20, 0], 3);
 
-            L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
-                subdomains: ['1', '2', '3', '4'],
-                attribution: '© 高德地图'
+            // 使用 OpenStreetMap 瓦片服务
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
             }).addTo(map);
 
+            // 地图加载错误处理
             map.on('tileerror', function() {
                 console.log('地图瓦片加载失败，请检查网络连接');
+                // 可选：显示错误提示
+                // alert('地图加载失败，请检查网络连接');
             });
 
+            // 图标创建函数
             function createIcon(color, gradientColors, popupAnchor = [0, -5]) {
                 return L.divIcon({
                     className: 'custom-dot',
@@ -271,6 +276,7 @@
                 });
             }
 
+            // 图标定义
             var blueDotIconCN = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
             var blueDotIconUS = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
             var blueDotIconMEX = createIcon(BLUE_COLOR, ['#3498db', '#2980b9'], [0, -5]);
@@ -291,6 +297,7 @@
             var greenSquareIconBE = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
             var greenSquareIconIN = createIcon(GREEN_COLOR, ['#2ecc71', '#27ae60'], [0, -5]);
 
+            // 数据定义
             var factories = [
                 { name: "中国CN", coords: [39.9354, 119.5996], tariffs: { US: "27.5%", EU: "25.3%" }, country: "CN", color: BLUE_COLOR, icon: blueDotIconCN },
                 { name: "美国US", coords: [42.3314, -83.0458], tariffs: { US: "0%", EU: "0%" }, country: "US", color: BLUE_COLOR, icon: blueDotIconUS },
@@ -338,6 +345,7 @@
             var isOrangePopupsVisible = true;
             var isGreenPopupsVisible = true;
 
+            // 绘制箭头
             function drawCurvedArrow(from, to, color) {
                 var midLat = (from[0] + to[0]) / 2;
                 var midLng = (from[1] + to[1]) / 2;
@@ -388,6 +396,7 @@
                 return [line, arrow];
             }
 
+            // 创建标记
             function createMarkers(factories) {
                 factories.forEach(function(factory) {
                     var marker = L.marker(factory.coords, { icon: factory.icon }).addTo(map);
@@ -613,7 +622,7 @@
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                     navigator.serviceWorker.register('/TAX_MAP_PWA/sw.js').then(registration => {
-                        console.log('Service Worker 注册成功，作用域为：', registration.scope');
+                        console.log('Service Worker 注册成功，作用域为：', registration.scope);
 
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
