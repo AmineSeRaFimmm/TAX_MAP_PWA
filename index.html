@@ -540,21 +540,27 @@
                 table.appendChild(thead);
 
                 data.forEach(item => {
-                    const row = document.createElement('tr');
-                    const nameCell = document.createElement('td');
-                    nameCell.textContent = item.name;
-                    row.appendChild(nameCell);
+                    // 遍历每个工厂/供应商的税率条目
+                    Object.entries(item.tariffs).forEach(([country, rate], index) => {
+                        const row = document.createElement('tr');
+                        if (index === 0) {
+                            // 第一行显示工厂名称
+                            const nameCell = document.createElement('td');
+                            nameCell.textContent = item.name;
+                            nameCell.rowSpan = Object.keys(item.tariffs).length; // 合并行
+                            row.appendChild(nameCell);
+                        }
 
-                    const coordsCell = document.createElement('td');
-                    coordsCell.textContent = `(${item.coords[0].toFixed(4)}, ${item.coords[1].toFixed(4)})`;
-                    row.appendChild(coordsCell);
+                        const countryCell = document.createElement('td');
+                        countryCell.textContent = country;
+                        row.appendChild(countryCell);
 
-                    const tariffsCell = document.createElement('td');
-                    const tariffs = Object.entries(item.tariffs).map(([key, value]) => `${key}: ${value}`).join('<br>');
-                    tariffsCell.innerHTML = tariffs;
-                    row.appendChild(tariffsCell);
+                        const rateCell = document.createElement('td');
+                        rateCell.textContent = rate;
+                        row.appendChild(rateCell);
 
-                    tbody.appendChild(row);
+                        tbody.appendChild(row);
+                    });
                 });
                 table.appendChild(tbody);
                 container.appendChild(table);
@@ -562,9 +568,9 @@
             }
 
             // 初始化表格
-            generateTable(factories, 'existing-tab', ['工厂名称', '坐标', '税率']);
-            generateTable(newFactories, 'planned-tab', ['工厂名称', '坐标', '税率']);
-            generateTable(greenFactories, 'aluminum-tab', ['供应商名称', '坐标', '税率']);
+            generateTable(factories, 'existing-tab', ['工厂名称', '进口国家', '关税税率']);
+            generateTable(newFactories, 'planned-tab', ['工厂名称', '进口国家', '关税税率']);
+            generateTable(greenFactories, 'aluminum-tab', ['供应商名称', '进口国家', '关税税率']);
 
             // 选项卡切换
             const tabButtons = document.querySelectorAll('.tab-button');
